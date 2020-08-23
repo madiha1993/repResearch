@@ -1,0 +1,68 @@
+---
+title: "PA1_template"
+author: "madiha"
+date: "8/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+stepdata <- read.csv("activity.csv", header = TRUE)
+head(stepdata)
+library(magrittr)
+library(dplyr)
+databydate <- stepdata %>% select(date, steps) %>% group_by(date) %>% summarize(tsteps= sum(steps)) %>%na.omit()
+mean(databydate$tsteps)
+median(databydate$tsteps)
+library(ggplot2)
+databyinterval <- stepdata%>% select(interval, steps) %>% na.omit() %>% group_by(interval) %>% summarize(tsteps= mean(steps)) 
+databyinterval[which(databyinterval$tsteps== max(databyinterval$tsteps)),]
+missingVals <- sum(is.na(data))
+missingVals
+library(magrittr)
+library(dplyr)
+replacewithmean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+meandata <- stepdata%>% group_by(interval) %>% mutate(steps= replacewithmean(steps))
+head(meandata)
+FullSummedDataByDay <- aggregate(meandata$steps, by=list(meandata$date), sum)
+names(FullSummedDataByDay)[1] ="date"
+names(FullSummedDataByDay)[2] ="totalsteps"
+head(FullSummedDataByDay,15)
+summary(FullSummedDataByDay)
+oldmean <- mean(databydate$tsteps, na.rm = TRUE)
+newmean <- mean(FullSummedDataByDay$totalsteps)
+oldmean
+newmean
+oldmedian <- median(databydate$tsteps, na.rm = TRUE)
+newmedian <- median(FullSummedDataByDay$totalsteps)
+oldmedian
+newmedian
+meandata$date <- as.Date(meandata$date)
+meandata$weekday <- weekdays(meandata$date)
+meandata$weekend <- ifelse(meandata$weekday=="Saturday" | meandata$weekday=="Sunday", "Weekend", "Weekday" )
+library(ggplot2)
+meandataweekendweekday <- aggregate(meandata$steps , by= list(meandata$weekend, meandata$interval), na.omit(mean))
+names(meandataweekendweekday) <- c("weekend", "interval", "steps")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+hist(databydate$tsteps, xlab = "Total daily Steps",main="Histogram of Total Steps by day", breaks = 20)
+ggplot(databyinterval, aes(x=interval, y=tsteps))+ geom_line()
+hist(FullSummedDataByDay$totalsteps, xlab = "Steps", ylab = "Frequency", main = "Total Daily Steps", breaks = 20)
+ggplot(meandataweekendweekday, aes(x=interval, y=steps, color=weekend)) + geom_line() + facet_grid(weekend ~.) + xlab("Interval") + ylab("Mean of Steps") + ggtitle("Comparison of Average Number of Steps in Each Interval")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
